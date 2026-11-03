@@ -1,19 +1,23 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @EnvironmentObject private var model: AppModel
+  @EnvironmentObject private var model: AppModel
+  @Environment(\.openWindow) private var openWindow
 
-    var body: some View {
-        Button("Show DocFloat") { model.showWindow() }
-        Divider()
-        Toggle("Click-through", isOn: $model.clickThrough)
-        HStack {
-            Text("Opacity")
-            Slider(value: $model.opacity, in: 0.2...1.0)
-                .frame(width: 140)
-        }
-        Button("Reload Document") { model.loadDocument() }
-        Divider()
-        Button("Quit DocFloat") { NSApp.terminate(nil) }
+  var body: some View {
+    Button("Show & Unlock DocFloat") {
+      openWindow(id: "main")
+      model.showWindow()
     }
+    Divider()
+    Toggle("Click-through", isOn: $model.clickThrough)
+    ForEach([0.4, 0.6, 0.8, 1.0], id: \.self) { value in
+      Button("Opacity: \(Int(value * 100))%") { model.opacity = value }
+    }
+    Toggle("Compact Mode", isOn: $model.compact)
+    Button("Open PDF…") { model.openPDF() }
+    Button("Reload Document") { model.loadDocument() }
+    Divider()
+    Button("Quit DocFloat") { NSApp.terminate(nil) }
+  }
 }
