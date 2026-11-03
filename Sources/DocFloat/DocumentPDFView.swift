@@ -18,12 +18,19 @@ struct DocumentPDFView: NSViewRepresentable {
   }
 
   func updateNSView(_ view: PDFView, context: Context) {
-    if context.coordinator.data != data {
+    let contentChanged = context.coordinator.data != data
+    if contentChanged {
+      let previousPage = view.currentPage.flatMap { view.document?.index(for: $0) }
+      let previousPoint = view.currentDestination?.point
       context.coordinator.data = data
       view.document = PDFDocument(data: data)
       view.autoScales = true
       context.coordinator.zoom = nil
-      context.coordinator.query = nil
+      if let previousPage, let document = view.document,
+        let page = document.page(at: min(previousPage, max(0, document.pageCount - 1)))
+      {
+        view.go(to: PDFDestination(page: page, at: previousPoint ?? .zero))
+      }
     }
     if context.coordinator.zoom != zoom {
       let position = view.currentDestination
@@ -33,13 +40,14 @@ struct DocumentPDFView: NSViewRepresentable {
       context.coordinator.zoom = zoom
     }
     let coordinator = context.coordinator
-    let changed = coordinator.query != query || coordinator.step != step
+    let changed = contentChanged || coordinator.query != query || coordinator.step != step
     guard changed else { return }
-    if coordinator.query != query {
+    if contentChanged || coordinator.query != query {
+      let previousIndex = coordinator.query == query ? coordinator.index : 0
       coordinator.query = query
       coordinator.matches =
         query.isEmpty ? [] : (view.document?.findString(query, withOptions: .caseInsensitive) ?? [])
-      coordinator.index = 0
+      coordinator.index = min(previousIndex, max(0, coordinator.matches.count - 1))
     } else if !coordinator.matches.isEmpty {
       coordinator.index =
         (coordinator.index + (backward ? -1 : 1) + coordinator.matches.count)

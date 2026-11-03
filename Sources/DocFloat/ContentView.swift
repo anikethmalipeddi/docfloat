@@ -100,7 +100,7 @@ struct ContentView: View {
           } label: {
             Image(systemName: "arrow.up.forward.app")
           }
-          .help("Open the original in your browser")
+          .help("Edit in your browser; changes refresh here every 15 seconds")
           Button {
             model.showingSettings = true
           } label: {
@@ -118,6 +118,10 @@ struct ContentView: View {
             .help("Google Docs → File → Download → PDF")
         }
         Spacer(minLength: 0)
+        if !model.syncStatus.isEmpty {
+          Text(model.syncStatus).font(.caption2).foregroundStyle(.secondary)
+            .lineLimit(1).help(model.syncStatus)
+        }
         Button {
           model.openFind()
           findFocused = true

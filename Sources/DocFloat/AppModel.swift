@@ -46,6 +46,12 @@ final class AppModel: ObservableObject {
   @Published var zoom: Double = 1
   @Published var documentName = ""
   @Published var reloadID = UUID()
+  @Published var autoRefresh = true {
+    didSet { startAutoRefresh() }
+  }
+  @Published var syncStatus = ""
+  private var loadedDocumentID: String?
+  private var refreshTask: Task<Void, Never>?
   private var loadTask: Task<Void, Never>?
   @Published var window: NSWindow? {
     didSet { configureWindow() }
@@ -67,6 +73,9 @@ final class AppModel: ObservableObject {
 
     errorMessage = nil
     loadTask?.cancel()
+    refreshTask?.cancel()
+    loadedDocumentID = id
+    syncStatus = ""
     documentName = "Google Doc"
     reloadID = UUID()
     if oauth.isAuthenticated {
@@ -75,6 +84,7 @@ final class AppModel: ObservableObject {
       isLoading = false
       content = .publicPreview(GoogleDocURL.previewURL(for: id))
     }
+    startAutoRefresh()
   }
 
   func signIn() {
@@ -94,6 +104,9 @@ final class AppModel: ObservableObject {
   func disconnect() {
     oauth.disconnect()
     loadTask?.cancel()
+    refreshTask?.cancel()
+    loadedDocumentID = nil
+    syncStatus = ""
     content = .empty
     isLoading = false
   }
@@ -110,6 +123,9 @@ final class AppModel: ObservableObject {
         return
       }
       loadTask?.cancel()
+      refreshTask?.cancel()
+      loadedDocumentID = nil
+      syncStatus = ""
       isLoading = false
       content = .pdf(data)
       documentName = url.deletingPathExtension().lastPathComponent
@@ -118,7 +134,7 @@ final class AppModel: ObservableObject {
   }
 
   func openInBrowser() {
-    guard let id = GoogleDocURL.documentID(from: docURL) else { return }
+    guard let id = loadedDocumentID ?? GoogleDocURL.documentID(from: docURL) else { return }
     NSWorkspace.shared.open(GoogleDocURL.editURL(for: id))
   }
 
@@ -138,11 +154,49 @@ final class AppModel: ObservableObject {
         throw GoogleOAuth.OAuthError.google("Google did not return a readable PDF.")
       }
       content = .pdf(data)
+      syncStatus = "Updated just now"
       isLoading = false
     } catch {
       guard !Task.isCancelled else { return }
       isLoading = false
       errorMessage = error.localizedDescription
+    }
+  }
+
+  private func startAutoRefresh() {
+    refreshTask?.cancel()
+    guard autoRefresh, let id = loadedDocumentID else { return }
+    refreshTask = Task { [weak self] in
+      // Allow the first load to finish, then fetch a fresh snapshot every 15 seconds.
+      while !Task.isCancelled {
+        do { try await Task.sleep(for: .seconds(15)) } catch { return }
+        guard let self, !self.isLoading else { continue }
+        do {
+          let data: Data
+          if self.oauth.isAuthenticated {
+            let token = try await self.oauth.validAccessToken()
+            data = try await DriveClient.exportPDF(documentID: id, accessToken: token)
+          } else {
+            let url = URL(string: "https://docs.google.com/document/d/\(id)/export?format=pdf")!
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+            request.timeoutInterval = 20
+            let (body, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+              throw GoogleOAuth.OAuthError.google("This Doc requires Google sign-in.")
+            }
+            data = body
+          }
+          try Task.checkCancellation()
+          guard PDFDocument(data: data) != nil else {
+            throw GoogleOAuth.OAuthError.google("A PDF export is unavailable for this Doc.")
+          }
+          if self.content != .pdf(data) { self.content = .pdf(data) }
+          self.syncStatus = "Updated " + Date.now.formatted(date: .omitted, time: .shortened)
+        } catch {
+          guard !Task.isCancelled else { return }
+          self.syncStatus = "Refresh unavailable · retrying"
+        }
+      }
     }
   }
 

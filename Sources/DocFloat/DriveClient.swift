@@ -16,7 +16,8 @@ enum DriveClient {
     var components = URLComponents(
       string: "https://www.googleapis.com/drive/v3/files/\(documentID)/export")!
     components.queryItems = [URLQueryItem(name: "mimeType", value: "application/pdf")]
-    var request = URLRequest(url: components.url!)
+    var request = URLRequest(url: components.url!, cachePolicy: .reloadIgnoringLocalCacheData)
+    request.timeoutInterval = 20
     request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
     let (data, response) = try await URLSession.shared.data(for: request)

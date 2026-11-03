@@ -8,7 +8,9 @@ Keep your notes above other windows on your Mac. Adjust transparency, zoom in, a
 2. Paste a shared Google Docs link and press **Load**, or choose **Open PDF**. For private notes, download your Doc through **File → Download → PDF** in Google Docs.
 3. Adjust opacity in the toolbar. Use **⇧⌘K** for compact mode, **⌘+ / ⌘−** to zoom, and **⌘O** to open a PDF.
 
-Click-through is available in the menu-bar icon. Choose **Show & Unlock DocFloat** there to interact again. PDFs stay in memory; reopen them after quitting. Private Google exports are snapshots—reload to fetch edits.
+Edit your Google Doc using the browser button. DocFloat refreshes saved changes every **15 seconds** while keeping your page and search position where possible. The toolbar shows the last successful refresh; disable automatic refresh in Settings. Shared Docs must allow PDF export; private Docs need the optional Google connection below.
+
+Click-through is available in the menu-bar icon. Choose **Show & Unlock DocFloat** there to interact again. Local PDFs do not sync; reopen them after quitting.
 
 The downloadable app is locally signed, not Apple-notarized. Source is available below. No analytics or DocFloat server.
 
