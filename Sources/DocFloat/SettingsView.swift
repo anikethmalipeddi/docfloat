@@ -16,6 +16,12 @@ struct SettingsView: View {
             .frame(width: 44, alignment: .trailing)
         }
         Toggle("Click-through mode", isOn: $model.clickThrough)
+        Toggle("Request screen-capture exclusion", isOn: $model.requestCaptureExclusion)
+        Text(
+          "On by default. Some capture apps ignore this macOS setting; notes may still appear in screen shares and recordings."
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
         Toggle("Refresh Google Docs every 15 seconds", isOn: $model.autoRefresh)
         Text(
           "When click-through is on, use the DocFloat menu-bar icon to turn interaction back on."
@@ -56,6 +62,6 @@ struct SettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(width: 560, height: 430)
+    .frame(width: 560, height: 490)
   }
 }

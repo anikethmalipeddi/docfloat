@@ -23,6 +23,14 @@ final class AppModel: ObservableObject {
   @Published var clickThrough = false {
     didSet { configureWindow() }
   }
+  @Published var requestCaptureExclusion =
+    UserDefaults.standard.object(forKey: "requestCaptureExclusion") as? Bool ?? true
+  {
+    didSet {
+      UserDefaults.standard.set(requestCaptureExclusion, forKey: "requestCaptureExclusion")
+      configureWindow()
+    }
+  }
   @Published var content: DocumentContent = .empty
   @Published var isLoading = false
   @Published var errorMessage: String?
@@ -208,6 +216,8 @@ final class AppModel: ObservableObject {
     window.backgroundColor = .clear
     window.alphaValue = opacity
     window.ignoresMouseEvents = clickThrough
+    // Legacy capture clients may honor this; ScreenCaptureKit can ignore it.
+    window.sharingType = requestCaptureExclusion ? .none : .readOnly
     window.titlebarAppearsTransparent = true
     window.isMovableByWindowBackground = true
   }

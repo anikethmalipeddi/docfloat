@@ -32,4 +32,6 @@ In [Google Cloud](https://console.cloud.google.com/apis/credentials), enable Dri
 
 This requests read-only access to Drive, exports the selected Doc as a PDF, and keeps the refresh token in macOS Keychain. Disconnect removes the local token; revoke access in your Google account to remove the grant. Sign-in requires your own Cloud configuration and has not been tested with a live account.
 
-MIT licensed. Notes remain visible to screen sharing.
+Screen-capture exclusion is requested by default and can be changed in Settings. macOS capture tools may ignore it; invisibility is not guaranteed. Share a specific app/window instead of your whole display to keep DocFloat outside the selected source.
+
+MIT licensed.
