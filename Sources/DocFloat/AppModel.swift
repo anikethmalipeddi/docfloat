@@ -28,6 +28,21 @@ final class AppModel: ObservableObject {
   @Published var errorMessage: String?
   @Published var showingSettings = false
   @Published var compact = false
+  @Published var showingFind = false
+  @Published var findQuery = ""
+  @Published var findStatus = ""
+  @Published var findStep = 0
+  @Published var findBackward = false
+
+  func openFind() {
+    clickThrough = false
+    showingFind = true
+  }
+
+  func nextMatch(backward: Bool = false) {
+    findBackward = backward
+    findStep += 1
+  }
   @Published var zoom: Double = 1
   @Published var documentName = ""
   @Published var reloadID = UUID()

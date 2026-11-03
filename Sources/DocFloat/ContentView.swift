@@ -2,16 +2,53 @@ import SwiftUI
 
 struct ContentView: View {
   @EnvironmentObject private var model: AppModel
+  @FocusState private var findFocused: Bool
 
   var body: some View {
     VStack(spacing: 0) {
       controls
+      if model.showingFind {
+        HStack {
+          TextField("Find in document", text: $model.findQuery)
+            .textFieldStyle(.roundedBorder)
+            .focused($findFocused)
+            .task { findFocused = true }
+            .onSubmit { model.nextMatch() }
+          Text(model.findStatus).font(.caption).foregroundStyle(.secondary)
+          Button {
+            model.nextMatch(backward: true)
+          } label: {
+            Image(systemName: "chevron.up")
+          }
+          .help("Previous match (⇧⌘G)")
+          Button {
+            model.nextMatch()
+          } label: {
+            Image(systemName: "chevron.down")
+          }
+          .help("Next match (Return or ⌘G)")
+          Button("Done") {
+            model.showingFind = false
+            model.findQuery = ""
+          }
+          .keyboardShortcut(.cancelAction)
+        }.padding(.horizontal, 10).padding(.bottom, 8)
+      }
       Divider().opacity(0.35)
       ZStack {
         if case .pdf(let data) = model.content {
-          DocumentPDFView(data: data, zoom: model.zoom)
+          DocumentPDFView(
+            data: data, zoom: model.zoom, query: model.findQuery,
+            step: model.findStep, backward: model.findBackward
+          ) { status in
+            if model.findStatus != status { model.findStatus = status }
+          }
         } else {
-          DocumentWebView(content: model.content, zoom: model.zoom, reloadID: model.reloadID) {
+          DocumentWebView(
+            content: model.content, zoom: model.zoom, reloadID: model.reloadID,
+            query: model.findQuery, step: model.findStep, backward: model.findBackward,
+            onFind: { model.findStatus = $0 }
+          ) {
             message in
             model.errorMessage = message
           }
@@ -44,6 +81,7 @@ struct ContentView: View {
     .onAppear {
       if !model.docURL.isEmpty { model.loadDocument() }
     }
+    .onChange(of: model.showingFind) { _, visible in findFocused = visible }
   }
 
   private var controls: some View {
@@ -80,6 +118,13 @@ struct ContentView: View {
             .help("Google Docs → File → Download → PDF")
         }
         Spacer(minLength: 0)
+        Button {
+          model.openFind()
+          findFocused = true
+        } label: {
+          Image(systemName: "magnifyingglass")
+        }
+        .help("Find (⌃F or ⌘F)")
         Image(systemName: "circle.lefthalf.filled").foregroundStyle(.secondary)
         Slider(value: $model.opacity, in: 0.2...1).frame(width: 90)
           .accessibilityLabel("Window opacity")

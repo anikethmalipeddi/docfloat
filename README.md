@@ -22,6 +22,8 @@ open dist/DocFloat.app
 swift test
 ```
 
+**Find:** press **Control-F** or **⌘F**, type a phrase, then **Return / ⌘G** for the next match or **⇧⌘G** for the previous one. Search wraps around and ignores case. PDFs must contain selectable text (scanned images need OCR first).
+
 ## Optional Google sign-in
 
 In [Google Cloud](https://console.cloud.google.com/apis/credentials), enable Drive API, configure OAuth consent with your account as a test user, and create a **Desktop app** client. Paste its client ID in Settings and sign in through your browser.

@@ -20,6 +20,14 @@ struct DocFloatApp: App {
           .keyboardShortcut("r")
       }
       CommandMenu("Reading") {
+        Button("Find…") { model.openFind() }
+          .keyboardShortcut("f")
+        Button("Find… (Control-F)") { model.openFind() }
+          .keyboardShortcut("f", modifiers: .control)
+        Button("Find Next") { model.nextMatch() }
+          .keyboardShortcut("g")
+        Button("Find Previous") { model.nextMatch(backward: true) }
+          .keyboardShortcut("g", modifiers: [.command, .shift])
         Toggle("Compact Mode", isOn: $model.compact)
           .keyboardShortcut("k", modifiers: [.command, .shift])
         Button("Zoom In") { model.zoom = min(3, model.zoom + 0.1) }

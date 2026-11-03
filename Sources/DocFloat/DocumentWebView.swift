@@ -6,6 +6,10 @@ struct DocumentWebView: NSViewRepresentable {
   let content: AppModel.DocumentContent
   let zoom: Double
   let reloadID: UUID
+  let query: String
+  let step: Int
+  let backward: Bool
+  let onFind: (String) -> Void
   let onError: (String) -> Void
 
   func makeNSView(context: Context) -> WKWebView {
@@ -20,6 +24,17 @@ struct DocumentWebView: NSViewRepresentable {
   func updateNSView(_ webView: WKWebView, context: Context) {
     webView.pageZoom = zoom
     context.coordinator.onError = onError
+    if context.coordinator.query != query || context.coordinator.step != step {
+      context.coordinator.query = query
+      context.coordinator.step = step
+      let configuration = WKFindConfiguration()
+      configuration.backwards = backward
+      configuration.caseSensitive = false
+      configuration.wraps = true
+      webView.find(query, configuration: configuration) { result in
+        onFind(query.isEmpty ? "" : (result.matchFound ? "Match found" : "No matches"))
+      }
+    }
     guard context.coordinator.lastContent != content || context.coordinator.reloadID != reloadID
     else { return }
     context.coordinator.lastContent = content
@@ -41,6 +56,8 @@ struct DocumentWebView: NSViewRepresentable {
     var lastContent: AppModel.DocumentContent?
     var reloadID: UUID?
     var onError: ((String) -> Void)?
+    var query = ""
+    var step = 0
 
     func webView(
       _ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
