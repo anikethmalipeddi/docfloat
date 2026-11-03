@@ -70,7 +70,7 @@ struct DocumentWebView: NSViewRepresentable {
       if url.host == "accounts.google.com" {
         decisionHandler(.cancel)
         onError?(
-          "This document needs sign-in. Use Settings to connect Google, or download it as a PDF in your browser and choose Open PDF."
+          "This linked document needs sign-in. Connect Google in Settings, or download a PDF in your browser and choose Open Notes."
         )
       } else if navigationAction.navigationType == .linkActivated {
         decisionHandler(.cancel)
@@ -91,6 +91,6 @@ struct DocumentWebView: NSViewRepresentable {
   private static let emptyHTML = """
     <!doctype html><meta charset="utf-8">
     <style>html,body{height:100%;margin:0;background:transparent;color:#777;font:17px -apple-system;display:grid;place-items:center;text-align:center}.box{max-width:360px;padding:30px}</style>
-    <div class="box"><strong>Your notes, within reach.</strong><p>Paste a shared Google Docs link, or open a PDF.</p><p style="font-size:13px">For a private Doc: File → Download → PDF in Google Docs, then Open PDF here. Google sign-in is also available in Settings.</p></div>
+    <div class="box"><strong>Your notes, within reach.</strong><p>Choose Open Notes to read a PDF above your other windows.</p><p style="font-size:13px">Want synced notes? Optionally link a Google Doc. Connect your account in Settings for private documents.</p></div>
     """
 }

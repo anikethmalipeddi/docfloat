@@ -14,9 +14,9 @@ struct DocFloatApp: App {
     .defaultSize(width: 760, height: 650)
     .commands {
       CommandGroup(after: .newItem) {
-        Button("Open PDF…") { model.openPDF() }
+        Button("Open Notes…") { model.openPDF() }
           .keyboardShortcut("o")
-        Button("Reload Google Doc") { model.loadDocument() }
+        Button("Refresh Linked Google Doc") { model.loadDocument() }
           .keyboardShortcut("r")
       }
       CommandMenu("Reading") {

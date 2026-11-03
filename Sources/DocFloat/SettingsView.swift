@@ -30,7 +30,7 @@ struct SettingsView: View {
         .foregroundStyle(.secondary)
       }
 
-      Section("Private Google Docs") {
+      Section("Google Docs integration · optional") {
         TextField("OAuth desktop client ID", text: $oauth.clientID)
         HStack {
           Button("Google Cloud credentials") {

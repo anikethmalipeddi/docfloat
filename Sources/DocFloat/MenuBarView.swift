@@ -15,7 +15,7 @@ struct MenuBarView: View {
       Button("Opacity: \(Int(value * 100))%") { model.opacity = value }
     }
     Toggle("Compact Mode", isOn: $model.compact)
-    Button("Open PDF…") { model.openPDF() }
+    Button("Open Notes…") { model.openPDF() }
     Button("Reload Document") { model.loadDocument() }
     Divider()
     Button("Quit DocFloat") { NSApp.terminate(nil) }

@@ -90,7 +90,7 @@ struct ContentView: View {
         HStack(spacing: 10) {
           Image(systemName: "doc.text")
             .foregroundStyle(.secondary)
-          TextField("Paste a Google Docs URL", text: $model.docURL)
+          TextField("Google Docs link (optional)", text: $model.docURL)
             .textFieldStyle(.plain)
             .onSubmit { model.loadDocument() }
           Button("Load") { model.loadDocument() }
@@ -114,8 +114,8 @@ struct ContentView: View {
           Text(model.documentName.isEmpty ? "DocFloat" : model.documentName)
             .font(.caption).lineLimit(1)
         } else {
-          Button("Open PDF…") { model.openPDF() }
-            .help("Google Docs → File → Download → PDF")
+          Button("Open Notes…") { model.openPDF() }
+            .help("Open your notes as a PDF")
         }
         Spacer(minLength: 0)
         if !model.syncStatus.isEmpty {
