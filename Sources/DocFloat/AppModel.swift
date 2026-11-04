@@ -34,6 +34,7 @@ final class AppModel: ObservableObject {
     }
   }
   @Published var contrastStatus = "Automatic · screen permission needed"
+  @Published var contrastDetails = "No background sample yet"
   @Published var contrastPermissionNeeded = !CGPreflightScreenCaptureAccess()
   private var documentContrast = ReadingContrast.standard
   private var contrastTask: Task<Void, Never>?
@@ -90,7 +91,13 @@ final class AppModel: ObservableObject {
               let target = AutoOpacity.recommendation(
                 document: self.documentContrast, background: background)
               if abs(self.opacity - target) >= 0.02 { self.opacity = target }
-              self.contrastStatus = "Auto · \(Int(self.opacity * 100))%"
+              let brightness =
+                background.isEmpty ? 0 : background.reduce(0, +) / Double(background.count)
+              self.contrastStatus =
+                "Auto · \(Int(self.opacity * 100))% · BG \(Int(brightness * 100))%"
+              self.contrastDetails =
+                "Sampled " + Date.now.formatted(date: .omitted, time: .standard)
+                + " · document tones \(Int(self.documentContrast.dark * 100))–\(Int(self.documentContrast.light * 100))%"
             } catch {
               if Task.isCancelled { return }
               self.contrastStatus = "Auto unavailable: \(error.localizedDescription)"

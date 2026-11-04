@@ -8,8 +8,7 @@ struct ReadingContrast: Equatable, Sendable {
 }
 
 enum AutoOpacity {
-  static func pixels(_ image: CGImage) -> [Double] {
-    let side = 64
+  static func pixels(_ image: CGImage, side: Int = 64) -> [Double] {
     var bytes = [UInt8](repeating: 0, count: side * side * 4)
     let drawn = bytes.withUnsafeMutableBytes { memory -> Bool in
       guard
@@ -31,31 +30,37 @@ enum AutoOpacity {
   }
 
   static func document(_ image: CGImage) -> ReadingContrast {
-    let values = pixels(image).sorted()
-    guard let low = values.first, let high = values.last, high - low > 0.25 else {
+    // Preserve glyphs instead of blurring a full page down to 64 pixels.
+    let values = pixels(image, side: 512).sorted()
+    guard !values.isEmpty else { return .standard }
+    let low = values[min(values.count - 1, values.count / 1000)]
+    let high = values[min(values.count - 1, values.count * 99 / 100)]
+    guard high - low > 0.25 else {
       return .standard
     }
     return ReadingContrast(dark: low, light: high)
   }
 
-  // Find an alpha meeting a 7:1 text contrast target over sampled backgrounds.
-  // Busy backgrounds add a small margin to reduce interference from underlying text.
+  // Target normal text contrast, bounded by the document's own achievable contrast.
+  // A faint document must not demand contrast that even 100% opacity cannot provide.
   static func recommendation(document: ReadingContrast, background: [Double]) -> Double {
     guard !background.isEmpty else { return 0.8 }
     func linear(_ value: Double) -> Double {
       value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
     }
+    let nativeContrast = (linear(document.light) + 0.05) / (linear(document.dark) + 0.05)
+    let targetContrast = min(4.5, 1 + (nativeContrast - 1) * 0.85)
     let mean = background.reduce(0, +) / Double(background.count)
     let variance = background.reduce(0) { $0 + pow($1 - mean, 2) } / Double(background.count)
-    let margin = min(0.18, 0.06 + sqrt(variance) * 0.5)
+    let margin = min(0.08, sqrt(variance) * 0.2)
     for step in 0...100 {
       let alpha = Double(step) / 100
       let readable = background.allSatisfy { behind in
         let dark = linear(document.dark * alpha + behind * (1 - alpha))
         let light = linear(document.light * alpha + behind * (1 - alpha))
-        return (light + 0.05) / (dark + 0.05) >= 7
+        return (light + 0.05) / (dark + 0.05) >= targetContrast
       }
-      if readable { return min(1, alpha + margin) }
+      if readable { return alpha + min(margin, (1 - alpha) * 0.3) }
     }
     return 1
   }

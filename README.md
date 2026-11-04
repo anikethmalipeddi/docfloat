@@ -14,7 +14,7 @@ Click **Auto-adjust** (⇧⌘A) to calculate opacity from the actual background.
 
 Click-through is available in the menu-bar icon. Choose **Show & Unlock DocFloat** there to interact again. Local PDFs do not sync; reopen them after quitting.
 
-The downloadable app is locally signed, not Apple-notarized. Source is available below. No analytics or DocFloat server.
+The downloadable app is signed, not Apple-notarized. No analytics or DocFloat server. Background sampling permission may need reapproval when moving from earlier ad-hoc builds to the development-signed version.
 
 ## Build and run
 

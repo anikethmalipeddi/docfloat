@@ -177,7 +177,7 @@ struct ContentView: View {
         ).frame(width: 70)
           .accessibilityLabel("Window opacity")
           .help(
-            "\(model.contrastStatus). Manual opacity: 0–100%. Restore a hidden window from the menu-bar icon."
+            "\(model.contrastStatus). \(model.contrastDetails). Manual opacity: 0–100%. Restore a hidden window from the menu-bar icon."
           )
         Text("\(Int(model.opacity * 100))%")
           .font(.caption).monospacedDigit().frame(width: 34)

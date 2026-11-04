@@ -3,6 +3,15 @@ import Testing
 
 @testable import DocFloat
 
+@Test func faintDocumentDoesNotSaturateAtFullOpacityAcrossBackgrounds() {
+  let document = ReadingContrast(dark: 0.45, light: 0.98)
+  let results = [[0.0], [0.5], [1.0], [0.0, 0.5, 1.0]].map {
+    AutoOpacity.recommendation(document: document, background: $0)
+  }
+  #expect(results.allSatisfy { $0 > 0 && $0 < 1 })
+  #expect(Set(results).count > 1)
+}
+
 @Test func automaticOpacityDependsOnBothDocumentAndBackground() {
   let document = ReadingContrast(dark: 0, light: 1)
   let white = AutoOpacity.recommendation(document: document, background: [1])

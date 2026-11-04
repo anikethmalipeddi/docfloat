@@ -22,6 +22,7 @@ struct SettingsView: View {
             .frame(width: 44, alignment: .trailing)
         }
         Text(model.contrastStatus).font(.caption).foregroundStyle(.secondary)
+        Text(model.contrastDetails).font(.caption).foregroundStyle(.secondary)
         Button("Allow Screen Recording for Auto-adjust…") { model.requestContrastPermission() }
         if model.contrastPermissionNeeded {
           Text(
