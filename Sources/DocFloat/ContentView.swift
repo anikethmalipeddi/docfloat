@@ -124,6 +124,8 @@ struct ContentView: View {
             .onSubmit { model.loadDocument() }
           Button("Load") { model.loadDocument() }
             .buttonStyle(.borderedProminent)
+          Button("Open Notes…") { model.openPDF() }
+            .help("Open your notes as a PDF")
           Button {
             model.openInBrowser()
           } label: {
@@ -142,12 +144,10 @@ struct ContentView: View {
         if model.compact {
           Text(model.documentName.isEmpty ? "DocFloat" : model.documentName)
             .font(.caption).lineLimit(1)
-        } else {
-          Button("Open Notes…") { model.openPDF() }
-            .help("Open your notes as a PDF")
+            .frame(maxWidth: 90)
         }
         Spacer(minLength: 0)
-        if !model.syncStatus.isEmpty {
+        if !model.syncStatus.isEmpty && !model.compact {
           Text(model.syncStatus).font(.caption2).foregroundStyle(.secondary)
             .lineLimit(1).help(model.syncStatus)
         }
@@ -159,13 +159,23 @@ struct ContentView: View {
         }
         .help("Find (⌃F or ⌘F)")
         Image(systemName: "circle.lefthalf.filled").foregroundStyle(.secondary)
+        Button("Auto-adjust") { model.autoAdjustNow() }
+          .help(
+            "Improve readability now, then automatically adjust when background sampling is enabled."
+          )
+          .contextMenu {
+            Button("Fully readable (100%)") { model.makeFullyReadable() }
+            Button("Enable background sampling…") { model.requestContrastPermission() }
+          }
         Slider(
           value: Binding(get: { model.opacity }, set: { model.setManualOpacity($0) }), in: 0...1
-        ).frame(width: 90)
+        ).frame(width: 70)
           .accessibilityLabel("Window opacity")
           .help(
             "\(model.contrastStatus). Manual opacity: 0–100%. Restore a hidden window from the menu-bar icon."
           )
+        Text("\(Int(model.opacity * 100))%")
+          .font(.caption).monospacedDigit().frame(width: 34)
         Button {
           model.zoom = max(0.5, model.zoom - 0.1)
         } label: {

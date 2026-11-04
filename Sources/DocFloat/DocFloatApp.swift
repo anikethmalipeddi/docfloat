@@ -20,6 +20,8 @@ struct DocFloatApp: App {
           .keyboardShortcut("r")
       }
       CommandMenu("Reading") {
+        Button("Auto-adjust Readability") { model.autoAdjustNow() }
+          .keyboardShortcut("a", modifiers: [.command, .shift])
         Button("Find…") { model.openFind() }
           .keyboardShortcut("f")
         Button("Find… (Control-F)") { model.openFind() }

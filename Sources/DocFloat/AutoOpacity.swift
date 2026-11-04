@@ -38,7 +38,7 @@ enum AutoOpacity {
     return ReadingContrast(dark: low, light: high)
   }
 
-  // Find the lowest alpha meeting a 4.5:1 text contrast target over sampled backgrounds.
+  // Find an alpha meeting a 7:1 text contrast target over sampled backgrounds.
   // Busy backgrounds add a small margin to reduce interference from underlying text.
   static func recommendation(document: ReadingContrast, background: [Double]) -> Double {
     guard !background.isEmpty else { return 0.8 }
@@ -47,13 +47,13 @@ enum AutoOpacity {
     }
     let mean = background.reduce(0, +) / Double(background.count)
     let variance = background.reduce(0) { $0 + pow($1 - mean, 2) } / Double(background.count)
-    let margin = min(0.15, sqrt(variance) * 0.4)
+    let margin = min(0.18, 0.06 + sqrt(variance) * 0.5)
     for step in 0...100 {
       let alpha = Double(step) / 100
       let readable = background.allSatisfy { behind in
         let dark = linear(document.dark * alpha + behind * (1 - alpha))
         let light = linear(document.light * alpha + behind * (1 - alpha))
-        return (light + 0.05) / (dark + 0.05) >= 4.5
+        return (light + 0.05) / (dark + 0.05) >= 7
       }
       if readable { return min(1, alpha + margin) }
     }

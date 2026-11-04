@@ -45,6 +45,21 @@ final class AppModel: ObservableObject {
 
   func sampleDocument(_ contrast: ReadingContrast) { documentContrast = contrast }
 
+  func autoAdjustNow() {
+    // Improve visibility immediately, even before background permission is granted.
+    opacity = 0.95
+    adaptiveContrast = true
+    if !CGPreflightScreenCaptureAccess() {
+      contrastStatus = "Readable at 95% · enable sampling in Settings for auto"
+    }
+    startContrastUpdates()
+  }
+
+  func makeFullyReadable() {
+    setManualOpacity(1)
+    contrastStatus = "Fully readable · 100%"
+  }
+
   func requestContrastPermission() {
     if !CGRequestScreenCaptureAccess() {
       if let url = URL(
@@ -75,7 +90,8 @@ final class AppModel: ObservableObject {
               self.contrastStatus = "Auto · background sampling unavailable"
             }
           } else {
-            self.contrastStatus = "Auto · screen permission needed"
+            self.contrastStatus =
+              "\(Int(self.opacity * 100))% · enable background sampling in Settings"
           }
         }
         do { try await Task.sleep(for: .seconds(3)) } catch { return }
