@@ -11,6 +11,7 @@ struct DocumentWebView: NSViewRepresentable {
   let backward: Bool
   let onFind: (String) -> Void
   let onSelectTab: (String) -> Void
+  let onLoaded: () -> Void
   let onError: (String) -> Void
 
   func makeNSView(context: Context) -> WKWebView {
@@ -27,6 +28,7 @@ struct DocumentWebView: NSViewRepresentable {
     context.coordinator.onError = onError
     context.coordinator.onFind = onFind
     context.coordinator.onSelectTab = onSelectTab
+    context.coordinator.onLoaded = onLoaded
     if context.coordinator.query != query || context.coordinator.step != step {
       context.coordinator.query = query
       context.coordinator.step = step
@@ -47,7 +49,14 @@ struct DocumentWebView: NSViewRepresentable {
     case .empty:
       webView.loadHTMLString(Self.emptyHTML, baseURL: nil)
     case .publicPreview(let url):
-      webView.load(URLRequest(url: url))
+      if let current = webView.url,
+        GoogleDocURL.documentID(from: current.absoluteString)
+          == GoogleDocURL.documentID(from: url.absoluteString)
+      {
+        webView.reloadFromOrigin()
+      } else {
+        webView.load(URLRequest(url: url))
+      }
     case .pdf:
       break
     case .tabHTML(let html):
@@ -63,10 +72,12 @@ struct DocumentWebView: NSViewRepresentable {
     var onError: ((String) -> Void)?
     var onFind: ((String) -> Void)?
     var onSelectTab: ((String) -> Void)?
+    var onLoaded: (() -> Void)?
     var query = ""
     var step = 0
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+      onLoaded?()
       guard !query.isEmpty else { return }
       let config = WKFindConfiguration()
       config.caseSensitive = false
@@ -92,6 +103,13 @@ struct DocumentWebView: NSViewRepresentable {
         onError?(
           "This linked document needs sign-in. Connect Google in Settings, or download a PDF in your browser and choose Open Notes."
         )
+      } else if navigationAction.navigationType == .linkActivated,
+        url.host == "docs.google.com", url.path.hasSuffix("/preview"),
+        let current = webView.url,
+        GoogleDocURL.documentID(from: current.absoluteString)
+          == GoogleDocURL.documentID(from: url.absoluteString)
+      {
+        decisionHandler(.allow)
       } else if navigationAction.navigationType == .linkActivated {
         decisionHandler(.cancel)
         if url.scheme == "https" || url.scheme == "http" { NSWorkspace.shared.open(url) }

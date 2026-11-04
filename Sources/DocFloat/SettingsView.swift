@@ -8,6 +8,11 @@ struct SettingsView: View {
   var body: some View {
     Form {
       Section("Window") {
+        Toggle("Adaptive contrast", isOn: $model.adaptiveContrast)
+        Text(
+          "A frosted backdrop, visible edge, and at least 88% opacity keep notes readable over light or busy windows. Turn off for unrestricted transparency."
+        )
+        .font(.caption).foregroundStyle(.secondary)
         HStack {
           Text("Opacity")
           Slider(value: $model.opacity, in: 0.2...1.0)
@@ -62,6 +67,6 @@ struct SettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(width: 560, height: 490)
+    .frame(width: 560, height: 560)
   }
 }

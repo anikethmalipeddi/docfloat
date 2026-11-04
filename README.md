@@ -2,6 +2,8 @@
 
 A lightweight, always-on-top notes viewer for Mac, with adjustable transparency, quick search, and optional Google Docs integration.
 
+**Adaptive contrast** is on by default: a frosted backdrop, visible edge, and 88% minimum opacity keep notes readable over white or busy windows. Disable it in Settings for unrestricted transparency.
+
 ## Get started
 
 1. [Download the latest release](https://github.com/anikethmalipeddi/docfloat/releases/latest), unzip, and move DocFloat to Applications. Requires an Apple silicon Mac running macOS 14+.
@@ -26,13 +28,13 @@ swift test
 
 ## Google Docs integration (optional)
 
-Paste a shared Google Docs link and press **Load**. Edit through the browser button; saved changes refresh here every **15 seconds**, keeping your page and search position where possible. Shared Docs must allow PDF export. You can disable automatic refresh in Settings.
+Paste a shared Google Docs link and press **Load**. Edit through the browser button; saved changes refresh here every **15 seconds**. Shared Docs keep Google's native tabs/subtabs in preview; preview refresh pauses while the overlay has focus. You can disable automatic refresh in Settings.
 
 For private Docs, connect your Google account below, or download through **File → Download → PDF** in Google Docs and open the PDF as local notes.
 
 In [Google Cloud](https://console.cloud.google.com/apis/credentials), enable **Drive API and Google Docs API**, configure OAuth consent with your account as a test user, and create a **Desktop app** client. Paste its client ID in Settings and sign in through your browser.
 
-**Document tabs:** with Google connected and Docs API enabled, a tab picker appears under the toolbar, including nested tabs. Choose a tab to jump straight to its notes; auto-refresh keeps that tab selected. This reading view supports text, headings, bold/italic, lists, and tables; images and exact page layout are not reproduced. Shared links without a Google connection retain the preview/PDF viewer.
+**Document tabs:** with Google connected and Docs API enabled, a tab picker appears under the toolbar, including nested tabs. Choose a tab to jump straight to its notes; auto-refresh keeps that tab selected. This reading view supports text, headings, bold/italic, lists, and tables; images and exact page layout are not reproduced. Shared links without a Google connection use Google's own tab navigation instead.
 
 This requests read-only access to Drive, exports the selected Doc as a PDF, and keeps the refresh token in macOS Keychain. Disconnect removes the local token; revoke access in your Google account to remove the grant. Sign-in requires your own Cloud configuration and has not been tested with a live account.
 

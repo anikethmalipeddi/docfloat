@@ -56,7 +56,12 @@ struct ContentView: View {
           DocumentWebView(
             content: model.content, zoom: model.zoom, reloadID: model.reloadID,
             query: model.findQuery, step: model.findStep, backward: model.findBackward,
-            onFind: { model.findStatus = $0 }, onSelectTab: { model.selectLinkedTab($0) }
+            onFind: { model.findStatus = $0 }, onSelectTab: { model.selectLinkedTab($0) },
+            onLoaded: {
+              if case .publicPreview = model.content {
+                model.syncStatus = "Updated " + Date.now.formatted(date: .omitted, time: .shortened)
+              }
+            }
           ) {
             message in
             model.errorMessage = message
@@ -71,7 +76,20 @@ struct ContentView: View {
         }
       }
     }
-    .background(.ultraThinMaterial)
+    .background {
+      if model.adaptiveContrast {
+        AdaptiveBackdrop()
+      } else {
+        Rectangle().fill(.ultraThinMaterial)
+      }
+    }
+    .overlay {
+      if model.adaptiveContrast {
+        RoundedRectangle(cornerRadius: 10)
+          .strokeBorder(Color.primary.opacity(0.3), lineWidth: 1)
+          .allowsHitTesting(false)
+      }
+    }
     .background(WindowAccessor(window: $model.window))
     .sheet(isPresented: $model.showingSettings) {
       SettingsView(oauth: model.oauth)
@@ -142,6 +160,10 @@ struct ContentView: View {
         Image(systemName: "circle.lefthalf.filled").foregroundStyle(.secondary)
         Slider(value: $model.opacity, in: 0.2...1).frame(width: 90)
           .accessibilityLabel("Window opacity")
+          .help(
+            model.adaptiveContrast
+              ? "Adaptive contrast keeps opacity at 88% or above for readability. Disable it in Settings for lower opacity."
+              : "Window opacity")
         Button {
           model.zoom = max(0.5, model.zoom - 0.1)
         } label: {

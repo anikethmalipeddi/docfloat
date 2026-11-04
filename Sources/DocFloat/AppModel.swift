@@ -24,6 +24,14 @@ final class AppModel: ObservableObject {
   @Published var clickThrough = false {
     didSet { configureWindow() }
   }
+  @Published var adaptiveContrast =
+    UserDefaults.standard.object(forKey: "adaptiveContrast") as? Bool ?? true
+  {
+    didSet {
+      UserDefaults.standard.set(adaptiveContrast, forKey: "adaptiveContrast")
+      configureWindow()
+    }
+  }
   @Published var requestCaptureExclusion =
     UserDefaults.standard.object(forKey: "requestCaptureExclusion") as? Bool ?? true
   {
@@ -255,14 +263,11 @@ final class AppModel: ObservableObject {
             }
             data = try await DriveClient.exportPDF(documentID: id, accessToken: token)
           } else {
-            let url = URL(string: "https://docs.google.com/document/d/\(id)/export?format=pdf")!
-            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
-            request.timeoutInterval = 20
-            let (body, response) = try await URLSession.shared.data(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-              throw GoogleOAuth.OAuthError.google("This Doc requires Google sign-in.")
-            }
-            data = body
+            // Retain Google's native tabs rather than flattening shared Docs to PDF.
+            if self.window?.isKeyWindow == true { continue }
+            self.reloadID = UUID()
+            self.syncStatus = "Refreshing preview"
+            continue
           }
           try Task.checkCancellation()
           guard PDFDocument(data: data) != nil else {
@@ -284,7 +289,9 @@ final class AppModel: ObservableObject {
     window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     window.isOpaque = false
     window.backgroundColor = .clear
-    window.alphaValue = opacity
+    // Keep foreground text legible; native vibrancy supplies the adaptive backdrop.
+    window.alphaValue = adaptiveContrast ? max(0.88, opacity) : opacity
+    window.hasShadow = true
     window.ignoresMouseEvents = clickThrough
     // Legacy capture clients may honor this; ScreenCaptureKit can ignore it.
     window.sharingType = requestCaptureExclusion ? .none : .readOnly
