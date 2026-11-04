@@ -30,7 +30,9 @@ Paste a shared Google Docs link and press **Load**. Edit through the browser but
 
 For private Docs, connect your Google account below, or download through **File → Download → PDF** in Google Docs and open the PDF as local notes.
 
-In [Google Cloud](https://console.cloud.google.com/apis/credentials), enable Drive API, configure OAuth consent with your account as a test user, and create a **Desktop app** client. Paste its client ID in Settings and sign in through your browser.
+In [Google Cloud](https://console.cloud.google.com/apis/credentials), enable **Drive API and Google Docs API**, configure OAuth consent with your account as a test user, and create a **Desktop app** client. Paste its client ID in Settings and sign in through your browser.
+
+**Document tabs:** with Google connected and Docs API enabled, a tab picker appears under the toolbar, including nested tabs. Choose a tab to jump straight to its notes; auto-refresh keeps that tab selected. This reading view supports text, headings, bold/italic, lists, and tables; images and exact page layout are not reproduced. Shared links without a Google connection retain the preview/PDF viewer.
 
 This requests read-only access to Drive, exports the selected Doc as a PDF, and keeps the refresh token in macOS Keychain. Disconnect removes the local token; revoke access in your Google account to remove the grant. Sign-in requires your own Cloud configuration and has not been tested with a live account.
 

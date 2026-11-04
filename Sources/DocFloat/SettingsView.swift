@@ -49,7 +49,7 @@ struct SettingsView: View {
           }
         }
         Text(
-          "Create a Desktop app OAuth client, enable the Google Drive API, then paste its client ID here. DocFloat requests read-only Drive access and stores the refresh token in your Mac Keychain."
+          "Create a Desktop app OAuth client and enable Google Drive API and Google Docs API. Paste the client ID here. Read-only access; tokens stay in your Mac Keychain. Docs API enables the document tab picker."
         )
         .font(.caption)
         .foregroundStyle(.secondary)

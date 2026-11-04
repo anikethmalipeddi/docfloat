@@ -24,6 +24,7 @@ struct DocumentWebView: NSViewRepresentable {
   func updateNSView(_ webView: WKWebView, context: Context) {
     webView.pageZoom = zoom
     context.coordinator.onError = onError
+    context.coordinator.onFind = onFind
     if context.coordinator.query != query || context.coordinator.step != step {
       context.coordinator.query = query
       context.coordinator.step = step
@@ -47,6 +48,8 @@ struct DocumentWebView: NSViewRepresentable {
       webView.load(URLRequest(url: url))
     case .pdf:
       break
+    case .tabHTML(let html):
+      webView.loadHTMLString(html, baseURL: nil)
     }
   }
 
@@ -56,8 +59,19 @@ struct DocumentWebView: NSViewRepresentable {
     var lastContent: AppModel.DocumentContent?
     var reloadID: UUID?
     var onError: ((String) -> Void)?
+    var onFind: ((String) -> Void)?
     var query = ""
     var step = 0
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+      guard !query.isEmpty else { return }
+      let config = WKFindConfiguration()
+      config.caseSensitive = false
+      config.wraps = true
+      webView.find(query, configuration: config) { [weak self] result in
+        self?.onFind?(result.matchFound ? "Match found" : "No matches")
+      }
+    }
 
     func webView(
       _ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,

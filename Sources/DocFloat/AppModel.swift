@@ -9,6 +9,7 @@ final class AppModel: ObservableObject {
     case empty
     case publicPreview(URL)
     case pdf(Data)
+    case tabHTML(String)
   }
 
   @Published var docURL: String {
@@ -58,6 +59,24 @@ final class AppModel: ObservableObject {
     didSet { startAutoRefresh() }
   }
   @Published var syncStatus = ""
+  @Published var tabs: [GoogleDocTab] = []
+  @Published var selectedTabID = "" {
+    didSet {
+      if let tab = tabs.first(where: { $0.id == selectedTabID }) {
+        content = .tabHTML(tab.html)
+        findStatus = ""
+      }
+    }
+  }
+
+  private func applyTabs(_ updated: [GoogleDocTab]) {
+    tabs = updated
+    if !updated.contains(where: { $0.id == selectedTabID }) {
+      selectedTabID = updated.first?.id ?? ""
+    } else if let selected = updated.first(where: { $0.id == selectedTabID }) {
+      content = .tabHTML(selected.html)
+    }
+  }
   private var loadedDocumentID: String?
   private var refreshTask: Task<Void, Never>?
   private var loadTask: Task<Void, Never>?
@@ -82,6 +101,11 @@ final class AppModel: ObservableObject {
     errorMessage = nil
     loadTask?.cancel()
     refreshTask?.cancel()
+    if loadedDocumentID != id {
+      tabs = []
+      let parts = URLComponents(string: docURL)
+      selectedTabID = parts?.queryItems?.first(where: { $0.name == "tab" })?.value ?? ""
+    }
     loadedDocumentID = id
     syncStatus = ""
     documentName = "Google Doc"
@@ -114,6 +138,7 @@ final class AppModel: ObservableObject {
     loadTask?.cancel()
     refreshTask?.cancel()
     loadedDocumentID = nil
+    tabs = []
     syncStatus = ""
     content = .empty
     isLoading = false
@@ -133,6 +158,7 @@ final class AppModel: ObservableObject {
       loadTask?.cancel()
       refreshTask?.cancel()
       loadedDocumentID = nil
+      tabs = []
       syncStatus = ""
       isLoading = false
       content = .pdf(data)
@@ -143,7 +169,9 @@ final class AppModel: ObservableObject {
 
   func openInBrowser() {
     guard let id = loadedDocumentID ?? GoogleDocURL.documentID(from: docURL) else { return }
-    NSWorkspace.shared.open(GoogleDocURL.editURL(for: id))
+    var url = URLComponents(url: GoogleDocURL.editURL(for: id), resolvingAgainstBaseURL: false)!
+    if !selectedTabID.isEmpty { url.queryItems = [URLQueryItem(name: "tab", value: selectedTabID)] }
+    NSWorkspace.shared.open(url.url!)
   }
 
   func showWindow() {
@@ -156,6 +184,15 @@ final class AppModel: ObservableObject {
     do {
       isLoading = true
       let token = try await oauth.validAccessToken()
+      if let docTabs = try? await GoogleDocTabs.fetch(documentID: id, token: token),
+        !docTabs.isEmpty
+      {
+        try Task.checkCancellation()
+        applyTabs(docTabs)
+        syncStatus = "Updated just now"
+        isLoading = false
+        return
+      }
       let data = try await DriveClient.exportPDF(documentID: id, accessToken: token)
       try Task.checkCancellation()
       guard PDFDocument(data: data) != nil else {
@@ -183,6 +220,18 @@ final class AppModel: ObservableObject {
           let data: Data
           if self.oauth.isAuthenticated {
             let token = try await self.oauth.validAccessToken()
+            if let docTabs = try? await GoogleDocTabs.fetch(documentID: id, token: token),
+              !docTabs.isEmpty
+            {
+              try Task.checkCancellation()
+              self.applyTabs(docTabs)
+              self.syncStatus = "Updated " + Date.now.formatted(date: .omitted, time: .shortened)
+              continue
+            }
+            if !self.tabs.isEmpty {
+              self.syncStatus = "Tab refresh unavailable · retrying"
+              continue
+            }
             data = try await DriveClient.exportPDF(documentID: id, accessToken: token)
           } else {
             let url = URL(string: "https://docs.google.com/document/d/\(id)/export?format=pdf")!

@@ -7,6 +7,15 @@ struct ContentView: View {
   var body: some View {
     VStack(spacing: 0) {
       controls
+      if !model.tabs.isEmpty {
+        Picker("Document tab", selection: $model.selectedTabID) {
+          ForEach(model.tabs) { tab in
+            Text(String(repeating: "  ", count: tab.depth) + tab.title).tag(tab.id)
+          }
+        }
+        .pickerStyle(.menu)
+        .padding(.horizontal, 10).padding(.bottom, 8)
+      }
       if model.showingFind {
         HStack {
           TextField("Find in document", text: $model.findQuery)
@@ -52,6 +61,7 @@ struct ContentView: View {
             message in
             model.errorMessage = message
           }
+          .id(model.selectedTabID)
         }
         if model.isLoading {
           ProgressView()
