@@ -10,6 +10,7 @@ struct DocumentWebView: NSViewRepresentable {
   let step: Int
   let backward: Bool
   let onFind: (String) -> Void
+  let onSelectTab: (String) -> Void
   let onError: (String) -> Void
 
   func makeNSView(context: Context) -> WKWebView {
@@ -25,6 +26,7 @@ struct DocumentWebView: NSViewRepresentable {
     webView.pageZoom = zoom
     context.coordinator.onError = onError
     context.coordinator.onFind = onFind
+    context.coordinator.onSelectTab = onSelectTab
     if context.coordinator.query != query || context.coordinator.step != step {
       context.coordinator.query = query
       context.coordinator.step = step
@@ -60,6 +62,7 @@ struct DocumentWebView: NSViewRepresentable {
     var reloadID: UUID?
     var onError: ((String) -> Void)?
     var onFind: ((String) -> Void)?
+    var onSelectTab: ((String) -> Void)?
     var query = ""
     var step = 0
 
@@ -81,7 +84,10 @@ struct DocumentWebView: NSViewRepresentable {
         decisionHandler(.cancel)
         return
       }
-      if url.host == "accounts.google.com" {
+      if url.scheme == "docfloat", url.host == "tab" {
+        decisionHandler(.cancel)
+        onSelectTab?(String(url.path.dropFirst()))
+      } else if url.host == "accounts.google.com" {
         decisionHandler(.cancel)
         onError?(
           "This linked document needs sign-in. Connect Google in Settings, or download a PDF in your browser and choose Open Notes."

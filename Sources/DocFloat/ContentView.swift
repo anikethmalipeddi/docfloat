@@ -56,7 +56,7 @@ struct ContentView: View {
           DocumentWebView(
             content: model.content, zoom: model.zoom, reloadID: model.reloadID,
             query: model.findQuery, step: model.findStep, backward: model.findBackward,
-            onFind: { model.findStatus = $0 }
+            onFind: { model.findStatus = $0 }, onSelectTab: { model.selectLinkedTab($0) }
           ) {
             message in
             model.errorMessage = message

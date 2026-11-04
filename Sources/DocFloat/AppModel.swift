@@ -69,8 +69,13 @@ final class AppModel: ObservableObject {
     }
   }
 
-  private func applyTabs(_ updated: [GoogleDocTab]) {
+  func applyTabs(_ updated: [GoogleDocTab]) {
     tabs = updated
+    guard !updated.isEmpty else {
+      selectedTabID = ""
+      content = .empty
+      return
+    }
     if !updated.contains(where: { $0.id == selectedTabID }) {
       selectedTabID = updated.first?.id ?? ""
     } else if let selected = updated.first(where: { $0.id == selectedTabID }) {
@@ -106,6 +111,7 @@ final class AppModel: ObservableObject {
       let parts = URLComponents(string: docURL)
       selectedTabID = parts?.queryItems?.first(where: { $0.name == "tab" })?.value ?? ""
     }
+    if let linkedTab = Self.linkedTabID(in: docURL) { selectedTabID = linkedTab }
     loadedDocumentID = id
     syncStatus = ""
     documentName = "Google Doc"
@@ -174,6 +180,20 @@ final class AppModel: ObservableObject {
     NSWorkspace.shared.open(url.url!)
   }
 
+  static func linkedTabID(in input: String) -> String? {
+    guard let parts = URLComponents(string: input) else { return nil }
+    let query = parts.queryItems ?? []
+    let fragment =
+      URLComponents(string: "https://local/?" + (parts.fragment ?? ""))?.queryItems ?? []
+    return (query + fragment).first(where: { $0.name == "tab" && $0.value?.isEmpty == false })?
+      .value
+  }
+
+  func selectLinkedTab(_ id: String) {
+    guard tabs.contains(where: { $0.id == id }) else { return }
+    selectedTabID = id
+  }
+
   func showWindow() {
     clickThrough = false
     NSApp.activate(ignoringOtherApps: true)
@@ -199,7 +219,8 @@ final class AppModel: ObservableObject {
         throw GoogleOAuth.OAuthError.google("Google did not return a readable PDF.")
       }
       content = .pdf(data)
-      syncStatus = "Updated just now"
+      tabs = []
+      syncStatus = "PDF view · tab navigation unavailable"
       isLoading = false
     } catch {
       guard !Task.isCancelled else { return }

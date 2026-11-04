@@ -16,19 +16,29 @@ enum GoogleDocTabs {
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     let (data, response) = try await URLSession.shared.data(for: request)
     guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+      let payload = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+      let detail = (payload?["error"] as? [String: Any])?["message"] as? String
       throw GoogleOAuth.OAuthError.google(
-        "Enable Google Docs API in your Google Cloud project to load document tabs.")
+        detail ?? "Google could not load document tabs. Check Google Docs API and document access.")
     }
     return try decode(data)
   }
 
   static func decode(_ data: Data) throws -> [GoogleDocTab] {
-    let root = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-    return flatten(root?["tabs"] as? [[String: Any]] ?? [], depth: 0)
+    guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+      let tabs = root["tabs"] as? [[String: Any]]
+    else {
+      throw GoogleOAuth.OAuthError.google("Google returned no document tab data.")
+    }
+    return flatten(tabs, depth: 0)
   }
 
   private static func flatten(_ tabs: [[String: Any]], depth: Int) -> [GoogleDocTab] {
-    tabs.flatMap { tab -> [GoogleDocTab] in
+    tabs.sorted { lhs, rhs in
+      let left = (lhs["tabProperties"] as? [String: Any])?["index"] as? Int ?? 0
+      let right = (rhs["tabProperties"] as? [String: Any])?["index"] as? Int ?? 0
+      return left < right
+    }.flatMap { tab -> [GoogleDocTab] in
       var result: [GoogleDocTab] = []
       if let properties = tab["tabProperties"] as? [String: Any],
         let id = properties["tabId"] as? String
@@ -60,6 +70,10 @@ enum GoogleDocTabs {
           let style = run["textStyle"] as? [String: Any] ?? [:]
           if style["bold"] as? Bool == true { text = "<strong>\(text)</strong>" }
           if style["italic"] as? Bool == true { text = "<em>\(text)</em>" }
+          if let link = style["link"] as? [String: Any], let tabID = link["tabId"] as? String {
+            let encoded = tabID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
+            text = "<a href=\"docfloat://tab/\(escape(encoded))\">\(text)</a>"
+          }
           return text
         }.joined()
         let style = paragraph["paragraphStyle"] as? [String: Any]
