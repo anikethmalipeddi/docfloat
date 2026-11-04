@@ -12,6 +12,7 @@ struct DocumentWebView: NSViewRepresentable {
   let onFind: (String) -> Void
   let onSelectTab: (String) -> Void
   let onLoaded: () -> Void
+  let onSample: (ReadingContrast) -> Void
   let onError: (String) -> Void
 
   func makeNSView(context: Context) -> WKWebView {
@@ -19,6 +20,7 @@ struct DocumentWebView: NSViewRepresentable {
     configuration.websiteDataStore = .default()
     let webView = WKWebView(frame: .zero, configuration: configuration)
     webView.navigationDelegate = context.coordinator
+    webView.uiDelegate = context.coordinator
     webView.underPageBackgroundColor = .clear
     return webView
   }
@@ -29,6 +31,7 @@ struct DocumentWebView: NSViewRepresentable {
     context.coordinator.onFind = onFind
     context.coordinator.onSelectTab = onSelectTab
     context.coordinator.onLoaded = onLoaded
+    context.coordinator.onSample = onSample
     if context.coordinator.query != query || context.coordinator.step != step {
       context.coordinator.query = query
       context.coordinator.step = step
@@ -42,6 +45,7 @@ struct DocumentWebView: NSViewRepresentable {
     }
     guard context.coordinator.lastContent != content || context.coordinator.reloadID != reloadID
     else { return }
+    let sameContent = context.coordinator.lastContent == content
     context.coordinator.lastContent = content
     context.coordinator.reloadID = reloadID
 
@@ -49,7 +53,7 @@ struct DocumentWebView: NSViewRepresentable {
     case .empty:
       webView.loadHTMLString(Self.emptyHTML, baseURL: nil)
     case .publicPreview(let url):
-      if let current = webView.url,
+      if sameContent, let current = webView.url,
         GoogleDocURL.documentID(from: current.absoluteString)
           == GoogleDocURL.documentID(from: url.absoluteString)
       {
@@ -66,18 +70,26 @@ struct DocumentWebView: NSViewRepresentable {
 
   func makeCoordinator() -> Coordinator { Coordinator() }
 
-  final class Coordinator: NSObject, WKNavigationDelegate {
+  final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
     var lastContent: AppModel.DocumentContent?
     var reloadID: UUID?
     var onError: ((String) -> Void)?
     var onFind: ((String) -> Void)?
     var onSelectTab: ((String) -> Void)?
     var onLoaded: (() -> Void)?
+    var onSample: ((ReadingContrast) -> Void)?
     var query = ""
     var step = 0
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
       onLoaded?()
+      let snapshot = WKSnapshotConfiguration()
+      snapshot.snapshotWidth = 512
+      webView.takeSnapshot(with: snapshot) { [weak self] image, _ in
+        if let cg = image?.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+          self?.onSample?(AutoOpacity.document(cg))
+        }
+      }
       guard !query.isEmpty else { return }
       let config = WKFindConfiguration()
       config.caseSensitive = false
@@ -98,6 +110,15 @@ struct DocumentWebView: NSViewRepresentable {
       if url.scheme == "docfloat", url.host == "tab" {
         decisionHandler(.cancel)
         onSelectTab?(String(url.path.dropFirst()))
+      } else if let current = webView.url,
+        let internalURL = GoogleDocURL.internalPreviewURL(url, current: current)
+      {
+        if internalURL != url || navigationAction.targetFrame?.isMainFrame != true {
+          decisionHandler(.cancel)
+          webView.load(URLRequest(url: internalURL))
+        } else {
+          decisionHandler(.allow)
+        }
       } else if url.host == "accounts.google.com" {
         decisionHandler(.cancel)
         onError?(
@@ -116,6 +137,21 @@ struct DocumentWebView: NSViewRepresentable {
       } else {
         decisionHandler(.allow)
       }
+    }
+
+    func webView(
+      _ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+      for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+      guard let url = navigationAction.request.url else { return nil }
+      if let current = webView.url,
+        let internalURL = GoogleDocURL.internalPreviewURL(url, current: current)
+      {
+        webView.load(URLRequest(url: internalURL))
+      } else if url.scheme == "https" || url.scheme == "http" {
+        NSWorkspace.shared.open(url)
+      }
+      return nil
     }
 
     func webView(

@@ -8,18 +8,21 @@ struct SettingsView: View {
   var body: some View {
     Form {
       Section("Window") {
-        Toggle("Adaptive contrast", isOn: $model.adaptiveContrast)
+        Toggle("Automatic opacity", isOn: $model.adaptiveContrast)
         Text(
-          "A frosted backdrop, visible edge, and at least 88% opacity keep notes readable over light or busy windows. Turn off for unrestricted transparency."
+          "Finds a readable opacity from your document and the background every 3 seconds. Requires Screen Recording permission. Samples stay in memory and are never saved or uploaded. Moving the slider switches to manual mode."
         )
         .font(.caption).foregroundStyle(.secondary)
         HStack {
           Text("Opacity")
-          Slider(value: $model.opacity, in: 0.2...1.0)
+          Slider(
+            value: Binding(get: { model.opacity }, set: { model.setManualOpacity($0) }), in: 0...1)
           Text("\(Int(model.opacity * 100))%")
             .monospacedDigit()
             .frame(width: 44, alignment: .trailing)
         }
+        Text(model.contrastStatus).font(.caption).foregroundStyle(.secondary)
+        Button("Enable background sampling…") { model.requestContrastPermission() }
         Toggle("Click-through mode", isOn: $model.clickThrough)
         Toggle("Request screen-capture exclusion", isOn: $model.requestCaptureExclusion)
         Text(

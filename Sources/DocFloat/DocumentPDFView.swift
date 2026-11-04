@@ -7,6 +7,7 @@ struct DocumentPDFView: NSViewRepresentable {
   let query: String
   let step: Int
   let backward: Bool
+  let onSample: (ReadingContrast) -> Void
   let onFind: (String) -> Void
 
   func makeNSView(context: Context) -> PDFView {
@@ -24,6 +25,13 @@ struct DocumentPDFView: NSViewRepresentable {
       let previousPoint = view.currentDestination?.point
       context.coordinator.data = data
       view.document = PDFDocument(data: data)
+      if let page = view.document?.page(at: 0) {
+        let image = page.thumbnail(of: NSSize(width: 512, height: 512), for: .mediaBox)
+        if let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+          let sample = AutoOpacity.document(cg)
+          DispatchQueue.main.async { onSample(sample) }
+        }
+      }
       view.autoScales = true
       context.coordinator.zoom = nil
       if let previousPage, let document = view.document,

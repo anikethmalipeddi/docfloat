@@ -2,7 +2,7 @@
 
 A lightweight, always-on-top notes viewer for Mac, with adjustable transparency, quick search, and optional Google Docs integration.
 
-**Adaptive contrast** is on by default: a frosted backdrop, visible edge, and 88% minimum opacity keep notes readable over white or busy windows. Disable it in Settings for unrestricted transparency.
+**Automatic opacity** is on by default. In Settings, choose **Enable background sampling** and grant macOS Screen Recording permission. DocFloat samples the document and the area behind it every 3 seconds, excludes itself from background capture, and estimates an opacity targeting readable text contrast. Samples stay in memory—never saved or uploaded. Without permission, the app shows that automatic sampling is unavailable. The slider switches to manual mode with a full **0–100%** range; recover a fully hidden overlay with **Show & Unlock DocFloat** in the menu bar.
 
 ## Get started
 

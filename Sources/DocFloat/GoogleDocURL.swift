@@ -38,4 +38,22 @@ enum GoogleDocURL {
   static func editURL(for documentID: String) -> URL {
     URL(string: "https://docs.google.com/document/d/\(documentID)/edit")!
   }
+
+  static func internalPreviewURL(_ target: URL, current: URL) -> URL? {
+    // Google sometimes wraps document links in a google.com/url redirect.
+    var target = target
+    if ["www.google.com", "google.com"].contains(target.host ?? ""), target.path == "/url",
+      let items = URLComponents(url: target, resolvingAgainstBaseURL: false)?.queryItems,
+      let value = items.first(where: { $0.name == "q" || $0.name == "url" })?.value,
+      let unwrapped = URL(string: value)
+    {
+      target = unwrapped
+    }
+    guard let id = documentID(from: current.absoluteString) else { return nil }
+    let resolved = URL(string: target.relativeString, relativeTo: current)?.absoluteURL ?? target
+    guard documentID(from: resolved.absoluteString) == id else { return nil }
+    var result = URLComponents(url: resolved, resolvingAgainstBaseURL: false)!
+    result.path = "/document/d/\(id)/preview"
+    return result.url
+  }
 }

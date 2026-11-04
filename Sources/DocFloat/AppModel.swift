@@ -30,6 +30,56 @@ final class AppModel: ObservableObject {
     didSet {
       UserDefaults.standard.set(adaptiveContrast, forKey: "adaptiveContrast")
       configureWindow()
+      startContrastUpdates()
+    }
+  }
+  @Published var contrastStatus = "Automatic · screen permission needed"
+  private var documentContrast = ReadingContrast.standard
+  private var contrastTask: Task<Void, Never>?
+
+  func setManualOpacity(_ value: Double) {
+    adaptiveContrast = false
+    opacity = min(1, max(0, value))
+    contrastStatus = "Manual"
+  }
+
+  func sampleDocument(_ contrast: ReadingContrast) { documentContrast = contrast }
+
+  func requestContrastPermission() {
+    if !CGRequestScreenCaptureAccess() {
+      if let url = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+      {
+        NSWorkspace.shared.open(url)
+      }
+    }
+    startContrastUpdates()
+  }
+
+  private func startContrastUpdates() {
+    contrastTask?.cancel()
+    guard adaptiveContrast, window != nil else { return }
+    contrastTask = Task { [weak self] in
+      while !Task.isCancelled {
+        if let self, let window = self.window {
+          if CGPreflightScreenCaptureAccess() {
+            do {
+              let background = try await AutoOpacity.background(behind: window)
+              try Task.checkCancellation()
+              let target = AutoOpacity.recommendation(
+                document: self.documentContrast, background: background)
+              if abs(self.opacity - target) >= 0.02 { self.opacity = target }
+              self.contrastStatus = "Auto · \(Int(self.opacity * 100))%"
+            } catch {
+              if Task.isCancelled { return }
+              self.contrastStatus = "Auto · background sampling unavailable"
+            }
+          } else {
+            self.contrastStatus = "Auto · screen permission needed"
+          }
+        }
+        do { try await Task.sleep(for: .seconds(3)) } catch { return }
+      }
     }
   }
   @Published var requestCaptureExclusion =
@@ -94,7 +144,10 @@ final class AppModel: ObservableObject {
   private var refreshTask: Task<Void, Never>?
   private var loadTask: Task<Void, Never>?
   @Published var window: NSWindow? {
-    didSet { configureWindow() }
+    didSet {
+      configureWindow()
+      if oldValue !== window { startContrastUpdates() }
+    }
   }
 
   let oauth = GoogleOAuth()
@@ -102,7 +155,9 @@ final class AppModel: ObservableObject {
   init() {
     docURL = UserDefaults.standard.string(forKey: "lastDocURL") ?? ""
     let savedOpacity = UserDefaults.standard.double(forKey: "windowOpacity")
-    opacity = savedOpacity == 0 ? 0.82 : savedOpacity
+    opacity =
+      UserDefaults.standard.object(forKey: "windowOpacity") == nil
+      ? 0.8 : min(1, max(0, savedOpacity))
   }
 
   func loadDocument() {
@@ -128,7 +183,11 @@ final class AppModel: ObservableObject {
       loadTask = Task { await loadPrivateDocument(id: id) }
     } else {
       isLoading = false
-      content = .publicPreview(GoogleDocURL.previewURL(for: id))
+      let preview = GoogleDocURL.previewURL(for: id)
+      let linked = URL(string: docURL).flatMap {
+        GoogleDocURL.internalPreviewURL($0, current: preview)
+      }
+      content = .publicPreview(linked ?? preview)
     }
     startAutoRefresh()
   }
@@ -204,7 +263,8 @@ final class AppModel: ObservableObject {
 
   func showWindow() {
     clickThrough = false
-    NSApp.activate(ignoringOtherApps: true)
+    if opacity < 0.05 { setManualOpacity(0.8) }
+    NSApplication.shared.activate(ignoringOtherApps: true)
     window?.makeKeyAndOrderFront(nil)
   }
 
@@ -289,8 +349,7 @@ final class AppModel: ObservableObject {
     window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     window.isOpaque = false
     window.backgroundColor = .clear
-    // Keep foreground text legible; native vibrancy supplies the adaptive backdrop.
-    window.alphaValue = adaptiveContrast ? max(0.88, opacity) : opacity
+    window.alphaValue = opacity
     window.hasShadow = true
     window.ignoresMouseEvents = clickThrough
     // Legacy capture clients may honor this; ScreenCaptureKit can ignore it.

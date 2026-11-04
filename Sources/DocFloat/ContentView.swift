@@ -48,7 +48,8 @@ struct ContentView: View {
         if case .pdf(let data) = model.content {
           DocumentPDFView(
             data: data, zoom: model.zoom, query: model.findQuery,
-            step: model.findStep, backward: model.findBackward
+            step: model.findStep, backward: model.findBackward,
+            onSample: { model.sampleDocument($0) }
           ) { status in
             if model.findStatus != status { model.findStatus = status }
           }
@@ -61,7 +62,7 @@ struct ContentView: View {
               if case .publicPreview = model.content {
                 model.syncStatus = "Updated " + Date.now.formatted(date: .omitted, time: .shortened)
               }
-            }
+            }, onSample: { model.sampleDocument($0) }
           ) {
             message in
             model.errorMessage = message
@@ -158,12 +159,13 @@ struct ContentView: View {
         }
         .help("Find (⌃F or ⌘F)")
         Image(systemName: "circle.lefthalf.filled").foregroundStyle(.secondary)
-        Slider(value: $model.opacity, in: 0.2...1).frame(width: 90)
+        Slider(
+          value: Binding(get: { model.opacity }, set: { model.setManualOpacity($0) }), in: 0...1
+        ).frame(width: 90)
           .accessibilityLabel("Window opacity")
           .help(
-            model.adaptiveContrast
-              ? "Adaptive contrast keeps opacity at 88% or above for readability. Disable it in Settings for lower opacity."
-              : "Window opacity")
+            "\(model.contrastStatus). Manual opacity: 0–100%. Restore a hidden window from the menu-bar icon."
+          )
         Button {
           model.zoom = max(0.5, model.zoom - 0.1)
         } label: {
