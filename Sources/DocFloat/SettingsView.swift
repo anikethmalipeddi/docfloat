@@ -22,7 +22,13 @@ struct SettingsView: View {
             .frame(width: 44, alignment: .trailing)
         }
         Text(model.contrastStatus).font(.caption).foregroundStyle(.secondary)
-        Button("Enable background sampling…") { model.requestContrastPermission() }
+        Button("Allow Screen Recording for Auto-adjust…") { model.requestContrastPermission() }
+        if model.contrastPermissionNeeded {
+          Text(
+            "Enable DocFloat in macOS Privacy & Security → Screen & System Audio Recording. macOS may require reopening the app. Until then, Auto-adjust cannot see the background."
+          )
+          .font(.caption).foregroundStyle(.orange)
+        }
         Toggle("Click-through mode", isOn: $model.clickThrough)
         Toggle("Request screen-capture exclusion", isOn: $model.requestCaptureExclusion)
         Text(

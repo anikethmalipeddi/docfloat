@@ -34,6 +34,7 @@ final class AppModel: ObservableObject {
     }
   }
   @Published var contrastStatus = "Automatic · screen permission needed"
+  @Published var contrastPermissionNeeded = !CGPreflightScreenCaptureAccess()
   private var documentContrast = ReadingContrast.standard
   private var contrastTask: Task<Void, Never>?
 
@@ -46,12 +47,15 @@ final class AppModel: ObservableObject {
   func sampleDocument(_ contrast: ReadingContrast) { documentContrast = contrast }
 
   func autoAdjustNow() {
-    // Improve visibility immediately, even before background permission is granted.
-    opacity = 0.95
     adaptiveContrast = true
     if !CGPreflightScreenCaptureAccess() {
-      contrastStatus = "Readable at 95% · enable sampling in Settings for auto"
+      contrastPermissionNeeded = true
+      contrastStatus = "Permission needed · opacity unchanged"
+      showingSettings = true
+      return
     }
+    contrastPermissionNeeded = false
+    contrastStatus = "Measuring background…"
     startContrastUpdates()
   }
 
@@ -61,6 +65,7 @@ final class AppModel: ObservableObject {
   }
 
   func requestContrastPermission() {
+    adaptiveContrast = true
     if !CGRequestScreenCaptureAccess() {
       if let url = URL(
         string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
@@ -78,6 +83,7 @@ final class AppModel: ObservableObject {
       while !Task.isCancelled {
         if let self, let window = self.window {
           if CGPreflightScreenCaptureAccess() {
+            self.contrastPermissionNeeded = false
             do {
               let background = try await AutoOpacity.background(behind: window)
               try Task.checkCancellation()
@@ -87,11 +93,12 @@ final class AppModel: ObservableObject {
               self.contrastStatus = "Auto · \(Int(self.opacity * 100))%"
             } catch {
               if Task.isCancelled { return }
-              self.contrastStatus = "Auto · background sampling unavailable"
+              self.contrastStatus = "Auto unavailable: \(error.localizedDescription)"
             }
           } else {
+            self.contrastPermissionNeeded = true
             self.contrastStatus =
-              "\(Int(self.opacity * 100))% · enable background sampling in Settings"
+              "Permission needed · background not sampled"
           }
         }
         do { try await Task.sleep(for: .seconds(3)) } catch { return }

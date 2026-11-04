@@ -147,9 +147,14 @@ struct ContentView: View {
             .frame(maxWidth: 90)
         }
         Spacer(minLength: 0)
-        if !model.syncStatus.isEmpty && !model.compact {
-          Text(model.syncStatus).font(.caption2).foregroundStyle(.secondary)
-            .lineLimit(1).help(model.syncStatus)
+        if !model.compact {
+          Text(model.adaptiveContrast ? model.contrastStatus : model.syncStatus)
+            .font(.caption2)
+            .foregroundStyle(
+              model.adaptiveContrast && model.contrastPermissionNeeded
+                ? Color.orange : Color.secondary
+            )
+            .lineLimit(1).help(model.adaptiveContrast ? model.contrastStatus : model.syncStatus)
         }
         Button {
           model.openFind()
@@ -161,7 +166,7 @@ struct ContentView: View {
         Image(systemName: "circle.lefthalf.filled").foregroundStyle(.secondary)
         Button("Auto-adjust") { model.autoAdjustNow() }
           .help(
-            "Improve readability now, then automatically adjust when background sampling is enabled."
+            "Calculate opacity from the actual background. If permission is missing, opens setup without changing opacity."
           )
           .contextMenu {
             Button("Fully readable (100%)") { model.makeFullyReadable() }

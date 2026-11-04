@@ -6,7 +6,7 @@ A lightweight, always-on-top notes viewer for Mac, with adjustable transparency,
 
 ## Get started
 
-Hard to read? Click **Auto-adjust** (⇧⌘A) beside the opacity slider. It immediately uses 95% opacity, then recalculates from your background when sampling is enabled. For maximum clarity, choose **Fully readable (100%)** from its right-click menu or the menu-bar icon. Manual opacity still spans 0–100%.
+Click **Auto-adjust** (⇧⌘A) to calculate opacity from the actual background. If Screen Recording permission is missing, it opens setup and leaves your opacity unchanged. A visible status confirms whether background sampling is active. For instant clarity without sampling, choose **Fully readable (100%)** from its right-click menu or the menu-bar icon. Manual opacity spans 0–100%.
 
 1. [Download the latest release](https://github.com/anikethmalipeddi/docfloat/releases/latest), unzip, and move DocFloat to Applications. Requires an Apple silicon Mac running macOS 14+.
 2. Choose **Open Notes** to open a PDF—no account needed.
