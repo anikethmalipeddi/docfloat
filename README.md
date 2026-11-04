@@ -2,7 +2,7 @@
 
 A lightweight, always-on-top notes viewer for Mac, with adjustable transparency, quick search, and optional Google Docs integration.
 
-**Automatic opacity** is on by default. In Settings, choose **Enable background sampling** and grant macOS Screen Recording permission. DocFloat samples the document and the area behind it every 3 seconds, excludes itself from background capture, and estimates an opacity targeting readable text contrast. Samples stay in memory—never saved or uploaded. Without permission, the app shows that automatic sampling is unavailable. The slider switches to manual mode with a full **0–100%** range; recover a fully hidden overlay with **Show & Unlock DocFloat** in the menu bar.
+**Auto-adjust runs once per click.** It samples the document and the background, excluding DocFloat itself, then keeps that opacity until you change it. Enable background sampling in Settings and grant macOS Screen Recording permission. Samples are never saved or uploaded. Manual opacity spans **0–100%**; recover a hidden overlay with **Show & Unlock DocFloat** in the menu bar.
 
 ## Get started
 
@@ -30,13 +30,13 @@ swift test
 
 ## Google Docs integration (optional)
 
-Paste a shared Google Docs link and press **Load**. Edit through the browser button; saved changes refresh here every **15 seconds**. Shared Docs keep Google's native tabs/subtabs in preview; preview refresh pauses while the overlay has focus. You can disable automatic refresh in Settings.
+Paste a shared Google Docs link and press **Load**. Edit through the browser button, then click **Load** or press **⌘R** to refresh when you want. DocFloat does not automatically reload your notes. Shared Docs keep Google's native tabs/subtabs in preview.
 
 For private Docs, connect your Google account below, or download through **File → Download → PDF** in Google Docs and open the PDF as local notes.
 
 In [Google Cloud](https://console.cloud.google.com/apis/credentials), enable **Drive API and Google Docs API**, configure OAuth consent with your account as a test user, and create a **Desktop app** client. Paste its client ID in Settings and sign in through your browser.
 
-**Document tabs:** with Google connected and Docs API enabled, a tab picker appears under the toolbar, including nested tabs. Choose a tab to jump straight to its notes; auto-refresh keeps that tab selected. This reading view supports text, headings, bold/italic, lists, and tables; images and exact page layout are not reproduced. Shared links without a Google connection use Google's own tab navigation instead.
+**Document tabs:** with Google connected and Docs API enabled, a tab picker appears under the toolbar, including nested tabs. Choose a tab to jump straight to its notes; manual reload keeps that tab selected. This reading view supports text, headings, bold/italic, lists, and tables; images and exact page layout are not reproduced. Shared links without a Google connection use Google's own tab navigation instead.
 
 This requests read-only access to Drive, exports the selected Doc as a PDF, and keeps the refresh token in macOS Keychain. Disconnect removes the local token; revoke access in your Google account to remove the grant. Sign-in requires your own Cloud configuration and has not been tested with a live account.
 

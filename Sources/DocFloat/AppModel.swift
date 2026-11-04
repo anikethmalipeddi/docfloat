@@ -30,16 +30,16 @@ final class AppModel: ObservableObject {
     didSet {
       UserDefaults.standard.set(adaptiveContrast, forKey: "adaptiveContrast")
       configureWindow()
-      startContrastUpdates()
     }
   }
-  @Published var contrastStatus = "Automatic · screen permission needed"
+  @Published var contrastStatus = "Click Auto-adjust to calculate opacity"
   @Published var contrastDetails = "No background sample yet"
   @Published var contrastPermissionNeeded = !CGPreflightScreenCaptureAccess()
   private var documentContrast = ReadingContrast.standard
   private var contrastTask: Task<Void, Never>?
 
   func setManualOpacity(_ value: Double) {
+    contrastTask?.cancel()
     adaptiveContrast = false
     opacity = min(1, max(0, value))
     contrastStatus = "Manual"
@@ -57,7 +57,7 @@ final class AppModel: ObservableObject {
     }
     contrastPermissionNeeded = false
     contrastStatus = "Measuring background…"
-    startContrastUpdates()
+    adjustContrastOnce()
   }
 
   func makeFullyReadable() {
@@ -74,14 +74,13 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.open(url)
       }
     }
-    startContrastUpdates()
   }
 
-  private func startContrastUpdates() {
+  private func adjustContrastOnce() {
     contrastTask?.cancel()
     guard adaptiveContrast, window != nil else { return }
     contrastTask = Task { [weak self] in
-      while !Task.isCancelled {
+      if !Task.isCancelled {
         if let self, let window = self.window {
           if CGPreflightScreenCaptureAccess() {
             self.contrastPermissionNeeded = false
@@ -108,7 +107,6 @@ final class AppModel: ObservableObject {
               "Permission needed · background not sampled"
           }
         }
-        do { try await Task.sleep(for: .seconds(3)) } catch { return }
       }
     }
   }
@@ -143,9 +141,6 @@ final class AppModel: ObservableObject {
   @Published var zoom: Double = 1
   @Published var documentName = ""
   @Published var reloadID = UUID()
-  @Published var autoRefresh = true {
-    didSet { startAutoRefresh() }
-  }
   @Published var syncStatus = ""
   @Published var tabs: [GoogleDocTab] = []
   @Published var selectedTabID = "" {
@@ -171,12 +166,10 @@ final class AppModel: ObservableObject {
     }
   }
   private var loadedDocumentID: String?
-  private var refreshTask: Task<Void, Never>?
   private var loadTask: Task<Void, Never>?
   @Published var window: NSWindow? {
     didSet {
       configureWindow()
-      if oldValue !== window { startContrastUpdates() }
     }
   }
 
@@ -198,7 +191,6 @@ final class AppModel: ObservableObject {
 
     errorMessage = nil
     loadTask?.cancel()
-    refreshTask?.cancel()
     if loadedDocumentID != id {
       tabs = []
       let parts = URLComponents(string: docURL)
@@ -219,7 +211,6 @@ final class AppModel: ObservableObject {
       }
       content = .publicPreview(linked ?? preview)
     }
-    startAutoRefresh()
   }
 
   func signIn() {
@@ -239,7 +230,6 @@ final class AppModel: ObservableObject {
   func disconnect() {
     oauth.disconnect()
     loadTask?.cancel()
-    refreshTask?.cancel()
     loadedDocumentID = nil
     tabs = []
     syncStatus = ""
@@ -259,7 +249,6 @@ final class AppModel: ObservableObject {
         return
       }
       loadTask?.cancel()
-      refreshTask?.cancel()
       loadedDocumentID = nil
       tabs = []
       syncStatus = ""
@@ -324,52 +313,6 @@ final class AppModel: ObservableObject {
       guard !Task.isCancelled else { return }
       isLoading = false
       errorMessage = error.localizedDescription
-    }
-  }
-
-  private func startAutoRefresh() {
-    refreshTask?.cancel()
-    guard autoRefresh, let id = loadedDocumentID else { return }
-    refreshTask = Task { [weak self] in
-      // Allow the first load to finish, then fetch a fresh snapshot every 15 seconds.
-      while !Task.isCancelled {
-        do { try await Task.sleep(for: .seconds(15)) } catch { return }
-        guard let self, !self.isLoading else { continue }
-        do {
-          let data: Data
-          if self.oauth.isAuthenticated {
-            let token = try await self.oauth.validAccessToken()
-            if let docTabs = try? await GoogleDocTabs.fetch(documentID: id, token: token),
-              !docTabs.isEmpty
-            {
-              try Task.checkCancellation()
-              self.applyTabs(docTabs)
-              self.syncStatus = "Updated " + Date.now.formatted(date: .omitted, time: .shortened)
-              continue
-            }
-            if !self.tabs.isEmpty {
-              self.syncStatus = "Tab refresh unavailable · retrying"
-              continue
-            }
-            data = try await DriveClient.exportPDF(documentID: id, accessToken: token)
-          } else {
-            // Retain Google's native tabs rather than flattening shared Docs to PDF.
-            if self.window?.isKeyWindow == true { continue }
-            self.reloadID = UUID()
-            self.syncStatus = "Refreshing preview"
-            continue
-          }
-          try Task.checkCancellation()
-          guard PDFDocument(data: data) != nil else {
-            throw GoogleOAuth.OAuthError.google("A PDF export is unavailable for this Doc.")
-          }
-          if self.content != .pdf(data) { self.content = .pdf(data) }
-          self.syncStatus = "Updated " + Date.now.formatted(date: .omitted, time: .shortened)
-        } catch {
-          guard !Task.isCancelled else { return }
-          self.syncStatus = "Refresh unavailable · retrying"
-        }
-      }
     }
   }
 

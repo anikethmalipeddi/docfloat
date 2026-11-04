@@ -131,7 +131,7 @@ struct ContentView: View {
           } label: {
             Image(systemName: "arrow.up.forward.app")
           }
-          .help("Edit in your browser; changes refresh here every 15 seconds")
+          .help("Edit in your browser; click Load or press ⌘R to refresh here")
           Button {
             model.showingSettings = true
           } label: {

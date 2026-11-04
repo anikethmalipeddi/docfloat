@@ -8,9 +8,9 @@ struct SettingsView: View {
   var body: some View {
     Form {
       Section("Window") {
-        Toggle("Automatic opacity", isOn: $model.adaptiveContrast)
+        Toggle("Frosted backdrop", isOn: $model.adaptiveContrast)
         Text(
-          "Finds a readable opacity from your document and the background every 3 seconds. Requires Screen Recording permission. Samples stay in memory and are never saved or uploaded. Moving the slider switches to manual mode."
+          "Auto-adjust samples the document and background once when clicked. Opacity stays fixed afterward. Requires Screen Recording permission; samples are never saved or uploaded."
         )
         .font(.caption).foregroundStyle(.secondary)
         HStack {
@@ -37,7 +37,6 @@ struct SettingsView: View {
         )
         .font(.caption)
         .foregroundStyle(.secondary)
-        Toggle("Refresh Google Docs every 15 seconds", isOn: $model.autoRefresh)
         Text(
           "When click-through is on, use the DocFloat menu-bar icon to turn interaction back on."
         )

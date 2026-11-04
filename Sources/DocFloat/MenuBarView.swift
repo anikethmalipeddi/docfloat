@@ -12,7 +12,6 @@ struct MenuBarView: View {
     Divider()
     Button("Auto-adjust now") { model.autoAdjustNow() }
     Button("Fully readable (100%)") { model.makeFullyReadable() }
-    Toggle("Automatic opacity", isOn: $model.adaptiveContrast)
     Toggle("Click-through", isOn: $model.clickThrough)
     ForEach([0.4, 0.6, 0.8, 1.0], id: \.self) { value in
       Button("Opacity: \(Int(value * 100))%") { model.setManualOpacity(value) }
