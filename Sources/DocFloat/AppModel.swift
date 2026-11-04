@@ -119,6 +119,30 @@ final class AppModel: ObservableObject {
     }
   }
   @Published var content: DocumentContent = .empty
+  @Published var isEditingNote = UserDefaults.standard.bool(forKey: "localEditorActive") {
+    didSet { UserDefaults.standard.set(isEditingNote, forKey: "localEditorActive") }
+  }
+  @Published var localNote = "" {
+    didSet {
+      do {
+        try noteStore.save(localNote)
+        noteSaveStatus = "Saved on this Mac"
+      } catch { noteSaveStatus = "Not saved: \(error.localizedDescription)" }
+    }
+  }
+  @Published var noteSaveStatus = "Saved on this Mac"
+  private let noteStore = LocalNoteStore()
+
+  func editLocalNote() {
+    loadTask?.cancel()
+    isLoading = false
+    isEditingNote = true
+    clickThrough = false
+    documentName = "My Notes"
+    syncStatus = ""
+    findStatus = ""
+    sampleDocument(.standard)
+  }
   @Published var isLoading = false
   @Published var errorMessage: String?
   @Published var showingSettings = false
@@ -176,6 +200,9 @@ final class AppModel: ObservableObject {
   let oauth = GoogleOAuth()
 
   init() {
+    do { localNote = try noteStore.read() } catch {
+      noteSaveStatus = "Could not read saved notes: \(error.localizedDescription)"
+    }
     docURL = UserDefaults.standard.string(forKey: "lastDocURL") ?? ""
     let savedOpacity = UserDefaults.standard.double(forKey: "windowOpacity")
     opacity =
@@ -190,6 +217,7 @@ final class AppModel: ObservableObject {
     }
 
     errorMessage = nil
+    isEditingNote = false
     loadTask?.cancel()
     if loadedDocumentID != id {
       tabs = []
@@ -249,6 +277,7 @@ final class AppModel: ObservableObject {
         return
       }
       loadTask?.cancel()
+      isEditingNote = false
       loadedDocumentID = nil
       tabs = []
       syncStatus = ""

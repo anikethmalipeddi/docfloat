@@ -10,6 +10,10 @@ struct MenuBarView: View {
       model.showWindow()
     }
     Divider()
+    Button("Write Notes") {
+      model.editLocalNote()
+      model.showWindow()
+    }
     Button("Auto-adjust now") { model.autoAdjustNow() }
     Button("Fully readable (100%)") { model.makeFullyReadable() }
     Toggle("Click-through", isOn: $model.clickThrough)

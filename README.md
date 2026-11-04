@@ -1,6 +1,6 @@
 # DocFloat
 
-A lightweight, always-on-top notes viewer for Mac, with adjustable transparency, quick search, and optional Google Docs integration.
+A lightweight, always-on-top notepad and notes viewer for Mac, with adjustable transparency, quick search, and optional Google Docs integration.
 
 **Auto-adjust runs once per click.** It samples the document and the background, excluding DocFloat itself, then keeps that opacity until you change it. Enable background sampling in Settings and grant macOS Screen Recording permission. Samples are never saved or uploaded. Manual opacity spans **0–100%**; recover a hidden overlay with **Show & Unlock DocFloat** in the menu bar.
 
@@ -9,10 +9,12 @@ A lightweight, always-on-top notes viewer for Mac, with adjustable transparency,
 Click **Auto-adjust** (⇧⌘A) to calculate opacity from the actual background. If Screen Recording permission is missing, it opens setup and leaves your opacity unchanged. A visible status confirms whether background sampling is active. For instant clarity without sampling, choose **Fully readable (100%)** from its right-click menu or the menu-bar icon. Manual opacity spans 0–100%.
 
 1. [Download the latest release](https://github.com/anikethmalipeddi/docfloat/releases/latest), unzip, and move DocFloat to Applications. Requires an Apple silicon Mac running macOS 14+.
-2. Choose **Open Notes** to open a PDF—no account needed.
+2. Click **Write Notes** (⌘N) to type directly, or **Open Notes** to read a PDF. No account needed.
 3. Adjust opacity in the toolbar. Use **⇧⌘K** for compact mode, **⌘+ / ⌘−** to zoom, and **⌘O** to open a PDF.
 
 Click-through is available in the menu-bar icon. Choose **Show & Unlock DocFloat** there to interact again. Local PDFs do not sync; reopen them after quitting.
+
+**My Notes** saves automatically on your Mac and is restored when you reopen the editor. It is a local plain-text notepad, separate from linked Google Docs. Find, undo/redo, and zoom work while editing.
 
 The downloadable app is signed, not Apple-notarized. No analytics or DocFloat server. Background sampling permission may need reapproval when moving from earlier ad-hoc builds to the development-signed version.
 

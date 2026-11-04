@@ -7,7 +7,7 @@ struct ContentView: View {
   var body: some View {
     VStack(spacing: 0) {
       controls
-      if !model.tabs.isEmpty {
+      if !model.isEditingNote && !model.tabs.isEmpty {
         Picker("Document tab", selection: $model.selectedTabID) {
           ForEach(model.tabs) { tab in
             Text(String(repeating: "  ", count: tab.depth) + tab.title).tag(tab.id)
@@ -45,7 +45,14 @@ struct ContentView: View {
       }
       Divider().opacity(0.35)
       ZStack {
-        if case .pdf(let data) = model.content {
+        if model.isEditingNote {
+          LocalNoteEditor(
+            text: $model.localNote, zoom: model.zoom, query: model.findQuery,
+            step: model.findStep, backward: model.findBackward
+          ) { status in
+            if model.findStatus != status { model.findStatus = status }
+          }
+        } else if case .pdf(let data) = model.content {
           DocumentPDFView(
             data: data, zoom: model.zoom, query: model.findQuery,
             step: model.findStep, backward: model.findBackward,
@@ -108,7 +115,11 @@ struct ContentView: View {
       Text(model.errorMessage ?? "")
     }
     .onAppear {
-      if !model.docURL.isEmpty { model.loadDocument() }
+      if model.isEditingNote {
+        model.editLocalNote()
+      } else if !model.docURL.isEmpty {
+        model.loadDocument()
+      }
     }
     .onChange(of: model.showingFind) { _, visible in findFocused = visible }
   }
@@ -141,6 +152,11 @@ struct ContentView: View {
         }
       }
       HStack(spacing: 10) {
+        Button(model.isEditingNote ? "My Notes" : "Write Notes") { model.editLocalNote() }
+          .help("Type notes here; saved automatically on your Mac (⌘N)")
+        if model.isEditingNote {
+          Text(model.noteSaveStatus).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+        }
         if model.compact {
           Text(model.documentName.isEmpty ? "DocFloat" : model.documentName)
             .font(.caption).lineLimit(1)
